@@ -5,6 +5,8 @@ use std::collections::HashMap;
 // ENDPOINT CONSTANTS
 // ============================================================================
 
+/// #[serde(skip_serializing_if = "Option::is_none")]
+
 pub mod endpoints {
     pub const VERSION: &str = "/api/version";
     pub const CONNECTION: &str = "/api/connection";
@@ -35,32 +37,45 @@ pub mod endpoints {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct VersionResponse {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub api: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub server: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub original: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub text: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub hostname: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub firmware: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub sdk: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub python: Option<Vec<PythonPackage>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub system: Option<SystemInfo>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PythonPackage {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub version: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub path: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SystemInfo {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub python: Option<String>,
-    #[serde(rename = "DESCRIPTION")]
+    #[serde(rename = "DESCRIPTION", skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
-    #[serde(rename = "ID")]
+    #[serde(rename = "ID", skip_serializing_if = "Option::is_none")]
     pub id: Option<String>,
-    #[serde(rename = "OS")]
+    #[serde(rename = "OS", skip_serializing_if = "Option::is_none")]
     pub os: Option<String>,
 }
 
@@ -70,68 +85,93 @@ pub struct SystemInfo {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ConnectionResponse {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub current: Option<ConnCurrent>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub options: Option<ConnOptions>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub connect: Option<ConnConfig>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub states: Option<ConnStates>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ConnCurrent {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub baudrate: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub port: Option<String>,
-    #[serde(rename = "printerProfile")]
+    #[serde(rename = "printerProfile", skip_serializing_if = "Option::is_none")]
     pub printer_profile: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub state: Option<State>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ConnOptions {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub ports: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub baudrates: Option<Vec<u32>>,
-    #[serde(rename = "printerProfiles")]
+    #[serde(rename = "printerProfiles", skip_serializing_if = "Option::is_none")]
     pub printer_profiles: Option<Vec<PrinterProfileOption>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PrinterProfileOption {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ConnConfig {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub hostname: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub port: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub tls: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub registration: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub code: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ConnStates {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub printer: Option<ConnectionState>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub connect: Option<ConnectionState>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ConnectionState {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub ok: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub message: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ConnectionRequest {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub command: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub baudrate: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub port: Option<String>,
-    #[serde(rename = "printerProfile")]
+    #[serde(rename = "printerProfile", skip_serializing_if = "Option::is_none")]
     pub printer_profile: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub connect: Option<ConnConfig>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ConnectionResponse200 {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub url: Option<String>,
 }
 
@@ -141,28 +181,39 @@ pub struct ConnectionResponse200 {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PrinterProfilesResponse {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub profiles: Option<HashMap<String, PrinterProfile>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PrinterProfile {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub model: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub color: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub current: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub default: Option<bool>,
-    #[serde(rename = "heatedBed")]
+    #[serde(rename = "heatedBed", skip_serializing_if = "Option::is_none")]
     pub heated_bed: Option<bool>,
-    #[serde(rename = "heatedChamber")]
+    #[serde(rename = "heatedChamber", skip_serializing_if = "Option::is_none")]
     pub heated_chamber: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub extruder: Option<ExtruderInfo>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub resource: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ExtruderInfo {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub count: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub offsets: Option<Vec<Vec<f64>>>,
 }
 
@@ -185,53 +236,77 @@ pub enum State {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PrinterResponse {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub temperature: Option<TemperatureState>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub sd: Option<SDState>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub state: Option<PrinterState>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub telemetry: Option<serde_json::Value>, // Can be FDM, Mini, or SL1
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TemperatureState {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub tool0: Option<TemperatureData>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub bed: Option<TemperatureData>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub chamber: Option<TemperatureData>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TemperatureData {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub actual: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub target: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub offset: Option<f64>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SDState {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub ready: Option<bool>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PrinterState {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub text: Option<State>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub flags: Option<PrinterFlags>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PrinterFlags {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub operational: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub paused: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub printing: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub cancelling: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub pausing: Option<bool>,
-    #[serde(rename = "sdReady")]
+    #[serde(rename = "sdReady", skip_serializing_if = "Option::is_none")]
     pub sd_ready: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub error: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub ready: Option<bool>,
-    #[serde(rename = "closedOrError")]
+    #[serde(rename = "closedOrError", skip_serializing_if = "Option::is_none")]
     pub closed_or_error: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub finished: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub prepared: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub busy: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub link_state: Option<LinkState>,
 }
 
@@ -255,40 +330,49 @@ pub enum LinkState {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TelemetryFDM {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub temp_bed: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub temp_nozzle: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub material: Option<String>,
-    #[serde(rename = "z-height")]
+    #[serde(rename = "z-height", skip_serializing_if = "Option::is_none")]
     pub z_height: Option<f64>,
-    #[serde(rename = "print-speed")]
+    #[serde(rename = "print-speed", skip_serializing_if = "Option::is_none")]
     pub print_speed: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub axis_x: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub axis_y: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub axis_z: Option<f64>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TelemetryMini {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub temp_bed: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub temp_nozzle: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub material: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TelemetrySL1 {
-    #[serde(rename = "fanUvLed")]
+    #[serde(rename = "fanUvLed", skip_serializing_if = "Option::is_none")]
     pub fan_uv_led: Option<u32>,
-    #[serde(rename = "fanBlower")]
+    #[serde(rename = "fanBlower", skip_serializing_if = "Option::is_none")]
     pub fan_blower: Option<u32>,
-    #[serde(rename = "fanRear")]
+    #[serde(rename = "fanRear", skip_serializing_if = "Option::is_none")]
     pub fan_rear: Option<u32>,
-    #[serde(rename = "coverClosed")]
+    #[serde(rename = "coverClosed", skip_serializing_if = "Option::is_none")]
     pub cover_closed: Option<bool>,
-    #[serde(rename = "tempAmbient")]
+    #[serde(rename = "tempAmbient", skip_serializing_if = "Option::is_none")]
     pub temp_ambient: Option<f64>,
-    #[serde(rename = "tempCpu")]
+    #[serde(rename = "tempCpu", skip_serializing_if = "Option::is_none")]
     pub temp_cpu: Option<f64>,
-    #[serde(rename = "tempUvLed")]
+    #[serde(rename = "tempUvLed", skip_serializing_if = "Option::is_none")]
     pub temp_uv_led: Option<f64>,
 }
 
@@ -298,41 +382,57 @@ pub struct TelemetrySL1 {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PrintheadRequest {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub jog: Option<JogCommand>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub home: Option<HomeCommand>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub speed: Option<SpeedCommand>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub feedrate: Option<FeedrateCommand>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub disable_steppers: Option<DisableSteppersCommand>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct JogCommand {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub command: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub x: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub y: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub z: Option<f64>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct HomeCommand {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub command: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub axes: Option<Vec<String>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SpeedCommand {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub command: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub factor: Option<f64>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FeedrateCommand {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub command: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub factor: Option<f64>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DisableSteppersCommand {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub command: Option<String>,
 }
 
@@ -342,47 +442,65 @@ pub struct DisableSteppersCommand {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ToolRequest {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub target: Option<TargetCommand>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub offset: Option<OffsetCommand>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub select: Option<SelectCommand>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub extrude: Option<ExtrudeCommand>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub retract: Option<RetractCommand>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub flowrate: Option<FlowrateCommand>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TargetCommand {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub command: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub targets: Option<HashMap<String, f64>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OffsetCommand {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub command: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub offsets: Option<HashMap<String, f64>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SelectCommand {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub command: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub tool: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ExtrudeCommand {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub command: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub amount: Option<f64>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RetractCommand {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub command: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub amount: Option<f64>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FlowrateCommand {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub command: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub amount: Option<f64>,
 }
 
@@ -392,7 +510,9 @@ pub struct FlowrateCommand {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BedRequest {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub command: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub target: Option<f64>,
 }
 
@@ -402,9 +522,11 @@ pub struct BedRequest {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ErrorResponse {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub code: Option<String>,
     pub title: String,
     pub text: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub url: Option<String>,
 }
 
@@ -414,21 +536,27 @@ pub struct ErrorResponse {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct JobResponse {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub job: Option<Job>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub progress: Option<Progress>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub state: Option<State>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Job {
-    #[serde(rename = "estimatedPrintTime")]
+    #[serde(rename = "estimatedPrintTime", skip_serializing_if = "Option::is_none")]
     pub estimated_print_time: Option<u32>,
-    #[serde(rename = "averagePrintTime")]
+    #[serde(rename = "averagePrintTime", skip_serializing_if = "Option::is_none")]
     pub average_print_time: Option<u32>,
-    #[serde(rename = "lastPrintTime")]
+    #[serde(rename = "lastPrintTime", skip_serializing_if = "Option::is_none")]
     pub last_print_time: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub filament: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub file: Option<JobFile>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub user: Option<String>,
     #[serde(flatten)]
     pub extra: serde_json::Value, // For FDM/SLA specific fields
@@ -436,40 +564,51 @@ pub struct Job {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct JobFile {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub path: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub origin: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub date: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub size: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub display: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub refs: Option<FileRefs>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub layers: Option<u32>,
-    #[serde(rename = "layerHeight")]
+    #[serde(rename = "layerHeight", skip_serializing_if = "Option::is_none")]
     pub layer_height: Option<f64>,
-    #[serde(rename = "exposureTime")]
+    #[serde(rename = "exposureTime", skip_serializing_if = "Option::is_none")]
     pub exposure_time: Option<u32>,
-    #[serde(rename = "exposureTimeFirst")]
+    #[serde(rename = "exposureTimeFirst", skip_serializing_if = "Option::is_none")]
     pub exposure_time_first: Option<f64>,
-    #[serde(rename = "exposureTimeCalibration")]
+    #[serde(rename = "exposureTimeCalibration", skip_serializing_if = "Option::is_none")]
     pub exposure_time_calibration: Option<f64>,
-    #[serde(rename = "exposureUserProfile")]
+    #[serde(rename = "exposureUserProfile", skip_serializing_if = "Option::is_none")]
     pub exposure_user_profile: Option<f64>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FileRefs {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub resource: Option<String>,
-    #[serde(rename = "thumbnailBig")]
+    #[serde(rename = "thumbnailBig", skip_serializing_if = "Option::is_none")]
     pub thumbnail_big: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Progress {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub completion: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub filepos: Option<u64>,
-    #[serde(rename = "printTime")]
+    #[serde(rename = "printTime", skip_serializing_if = "Option::is_none")]
     pub print_time: Option<u32>,
-    #[serde(rename = "printTimeLeft")]
+    #[serde(rename = "printTimeLeft", skip_serializing_if = "Option::is_none")]
     pub print_time_left: Option<u32>,
     #[serde(flatten)]
     pub extra: serde_json::Value, // For printer-specific fields
@@ -477,43 +616,53 @@ pub struct Progress {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ProgressMK3 {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub pos_z_mm: Option<f64>,
-    #[serde(rename = "printSpeed")]
+    #[serde(rename = "printSpeed", skip_serializing_if = "Option::is_none")]
     pub print_speed: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub flow_factor: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub completion: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub filepos: Option<u64>,
-    #[serde(rename = "printTime")]
+    #[serde(rename = "printTime", skip_serializing_if = "Option::is_none")]
     pub print_time: Option<u32>,
-    #[serde(rename = "printTimeLeft")]
+    #[serde(rename = "printTimeLeft", skip_serializing_if = "Option::is_none")]
     pub print_time_left: Option<u32>,
-    #[serde(rename = "printTimeLeftOrigin")]
+    #[serde(rename = "printTimeLeftOrigin", skip_serializing_if = "Option::is_none")]
     pub print_time_left_origin: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ProgressMini {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub pos_z_mm: Option<f64>,
-    #[serde(rename = "printSpeed")]
+    #[serde(rename = "printSpeed", skip_serializing_if = "Option::is_none")]
     pub print_speed: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub flow_factor: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub filament_status: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ProgressSL1 {
-    #[serde(rename = "currentLayer")]
+    #[serde(rename = "currentLayer", skip_serializing_if = "Option::is_none")]
     pub current_layer: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub completion: Option<f64>,
-    #[serde(rename = "printTime")]
+    #[serde(rename = "printTime", skip_serializing_if = "Option::is_none")]
     pub print_time: Option<u32>,
-    #[serde(rename = "printTimeLeft")]
+    #[serde(rename = "printTimeLeft", skip_serializing_if = "Option::is_none")]
     pub print_time_left: Option<u32>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct JobRequest {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub command: Option<JobCommand>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub action: Option<JobAction>,
 }
 
@@ -539,16 +688,23 @@ pub enum JobAction {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CommandsResponse {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub core: Option<Vec<serde_json::Value>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub custom: Option<Vec<SystemCommand>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SystemCommand {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub action: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub confirm: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub source: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub resource: Option<String>,
 }
 
@@ -558,13 +714,13 @@ pub struct SystemCommand {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ChangeExposureRequest {
-    #[serde(rename = "exposureTime")]
+    #[serde(rename = "exposureTime", skip_serializing_if = "Option::is_none")]
     pub exposure_time: Option<i32>,
-    #[serde(rename = "exposureTimeFirst")]
+    #[serde(rename = "exposureTimeFirst", skip_serializing_if = "Option::is_none")]
     pub exposure_time_first: Option<f64>,
-    #[serde(rename = "exposureTimeCalibration")]
+    #[serde(rename = "exposureTimeCalibration", skip_serializing_if = "Option::is_none")]
     pub exposure_time_calibration: Option<f64>,
-    #[serde(rename = "exposureUserProfile")]
+    #[serde(rename = "exposureUserProfile", skip_serializing_if = "Option::is_none")]
     pub exposure_user_profile: Option<f64>,
 }
 
@@ -574,16 +730,23 @@ pub struct ChangeExposureRequest {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct UsersResponse {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub users: Option<Vec<User>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct User {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub active: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub admin: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub apikey: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub settings: Option<serde_json::Value>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub user: Option<bool>,
 }
 
@@ -593,68 +756,93 @@ pub struct User {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SettingsResponse {
-    #[serde(rename = "api-key")]
+    #[serde(rename = "api-key", skip_serializing_if = "Option::is_none")]
     pub api_key: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub printer: Option<PrinterSettings>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PrinterSettings {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub location: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub farm_mode: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub network_error_chime: Option<bool>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SettingsRequest {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub printer: Option<PrinterSettingsUpdate>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub user: Option<UserSettingsUpdate>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub farm_mode: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub network_error_chime: Option<bool>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PrinterSettingsUpdate {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub location: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct UserSettingsUpdate {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub password: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub username: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub new_password: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub new_repassword: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SettingsErrorResponse {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub errors: Option<SettingsErrors>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SettingsErrors {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub printer: Option<PrinterErrors>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub user: Option<UserErrors>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PrinterErrors {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub missing_credentials: Option<bool>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct UserErrors {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub username: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub password: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub repassword: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub old_digest: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub same_digest: Option<bool>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SNRequest {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub serial: Option<String>,
 }
 
@@ -664,101 +852,133 @@ pub struct SNRequest {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FileMetadata {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub origin: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub path: Option<String>,
-    #[serde(rename = "type")]
+    #[serde(rename = "type", skip_serializing_if = "Option::is_none")]
     pub file_type: Option<String>,
-    #[serde(rename = "typePath")]
+    #[serde(rename = "typePath", skip_serializing_if = "Option::is_none")]
     pub type_path: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub refs: Option<FileRefs>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub size: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub date: Option<u64>,
-    #[serde(rename = "gcodeAnalysis")]
+    #[serde(rename = "gcodeAnalysis", skip_serializing_if = "Option::is_none")]
     pub gcode_analysis: Option<GcodeAnalysis>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GcodeAnalysis {
-    #[serde(rename = "estimatedPrintTime")]
+    #[serde(rename = "estimatedPrintTime", skip_serializing_if = "Option::is_none")]
     pub estimated_print_time: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub material: Option<String>,
-    #[serde(rename = "layerHeight")]
+    #[serde(rename = "layerHeight", skip_serializing_if = "Option::is_none")]
     pub layer_height: Option<f64>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FileInfo {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub origin: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub path: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub display: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub size: Option<u64>,
-    #[serde(rename = "type")]
+    #[serde(rename = "type", skip_serializing_if = "Option::is_none")]
     pub file_type: Option<String>,
-    #[serde(rename = "typePath")]
+    #[serde(rename = "typePath", skip_serializing_if = "Option::is_none")]
     pub type_path: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub refs: Option<FileRefsDetailed>,
-    #[serde(rename = "gcodeAnalysis")]
+    #[serde(rename = "gcodeAnalysis", skip_serializing_if = "Option::is_none")]
     pub gcode_analysis: Option<GcodeAnalysisDetailed>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub hash: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub date: Option<u64>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FileRefsDetailed {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub resource: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub download: Option<String>,
-    #[serde(rename = "thumbnailSmall")]
+    #[serde(rename = "thumbnailSmall", skip_serializing_if = "Option::is_none")]
     pub thumbnail_small: Option<String>,
-    #[serde(rename = "thumbnailBig")]
+    #[serde(rename = "thumbnailBig", skip_serializing_if = "Option::is_none")]
     pub thumbnail_big: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GcodeAnalysisDetailed {
-    #[serde(rename = "estimatedPrintTime")]
+    #[serde(rename = "estimatedPrintTime", skip_serializing_if = "Option::is_none")]
     pub estimated_print_time: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub material: Option<String>,
-    #[serde(rename = "layerHeight")]
+    #[serde(rename = "layerHeight", skip_serializing_if = "Option::is_none")]
     pub layer_height: Option<f64>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FolderInfo {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub origin: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub path: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub display: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub size: Option<u64>,
-    #[serde(rename = "type")]
+    #[serde(rename = "type", skip_serializing_if = "Option::is_none")]
     pub folder_type: Option<String>,
-    #[serde(rename = "typePath")]
+    #[serde(rename = "typePath", skip_serializing_if = "Option::is_none")]
     pub type_path: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub refs: Option<FolderRefs>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub children: Option<Vec<serde_json::Value>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FolderRefs {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub resource: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AllFilesInfo {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub files: Option<Vec<serde_json::Value>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub free: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub total: Option<u64>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FileSelectRequest {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub command: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub print: Option<bool>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FileCommandRequest {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub command: Option<FileCommandType>,
 }
 
@@ -794,45 +1014,67 @@ pub struct DownloadRequest {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DownloadInfo {
-    #[serde(rename = "type")]
+    #[serde(rename = "type", skip_serializing_if = "Option::is_none")]
     pub transfer_type: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub url: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub target: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub destination: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub path: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub size: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub start_time: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub progress: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub remaining_time: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub to_select: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub to_print: Option<bool>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FileUploaded {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub done: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub files: Option<HashMap<String, FileUploadedInfo>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FileUploadedInfo {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub origin: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub path: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub refs: Option<FileRefsDetailed>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FolderCreated {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub done: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub folder: Option<FolderCreatedInfo>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FolderCreatedInfo {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub origin: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub path: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub refs: Option<FolderRefs>,
 }
 
@@ -842,19 +1084,25 @@ pub struct FolderCreatedInfo {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LogsResponse {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub files: Option<Vec<LogFile>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LogFile {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub date: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub size: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub refs: Option<LogRefs>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LogRefs {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub download: Option<String>,
 }
 
@@ -864,9 +1112,11 @@ pub struct LogRefs {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ApiError {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub code: Option<String>,
     pub title: String,
     pub text: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub url: Option<String>,
 }
 
