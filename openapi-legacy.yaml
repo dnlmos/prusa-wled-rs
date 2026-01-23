@@ -1,0 +1,2426 @@
+openapi: 3.0.1
+info:
+  title: Prusa Link Web
+  description:
+    This is a printer connect webservice. It is compatible with another 3D
+    printer services, so many applications which use this service
+  contact:
+    email: developer@prusa3d.cz
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  version: 2.0.0
+externalDocs:
+  description: Find out more about API
+  url: https://connect.prusa3d.com
+security:
+  - ApiKeyAuth: [developer]
+paths:
+  /api/version:
+    get:
+      summary: version information
+      parameters:
+        - in: query
+          name: system
+          required: false
+          description: If system versions must be returned.
+          schema:
+            type: boolean
+            default: false
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  api:
+                    type: string
+                    example: "0.1"
+                  server:
+                    type: string
+                    example: "1.1.0"
+                    description: "Firmware on Prusa-Link version"
+                  original:
+                    type: string
+                    example: "PrusaLink I3MK3S"
+                  text:
+                    type: string
+                    example: "OctoPrint 1.1.0"
+                  hostname:
+                    type: string
+                    example: "prusa-sl1"
+                  firmware:
+                    type: string
+                    description: "Firmware version"
+                    example: "3.10.0"
+                  sdk:
+                    type: string
+                    example: "0.2.0"
+                  # platform dependent
+                  python:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                          example: "urllib3"
+                        version:
+                          type: string
+                          example: "1.26.1"
+                        path:
+                          type: string
+                          example: "/usr/lib/python3/dist-packages"
+                  # platform dependent
+                  system:
+                    type: object
+                    properties:
+                      python:
+                        type: string
+                      DESCRIPTION:
+                        type: string
+                      ID:
+                        type: string
+                        example: "Raspbian"
+                      OS:
+                        type: string
+                        example: "GNU/Linux"
+  /api/connection:
+    get:
+      summary: Retrieve a mock for current connection settings.
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  current:
+                    $ref: "#/components/schemas/ConnCurrent"
+                  options:
+                    $ref: "#/components/schemas/ConnOptions"
+                  connect:
+                    $ref: "#/components/schemas/ConnConfig"
+                  states:
+                    $ref: "#/components/schemas/ConnStates"
+
+        403:
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      summary: Issue a connection command
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                # platform dependent
+                command:
+                  type: string
+                  default: connect
+                # platform dependent
+                baudrate:
+                  type: integer
+                  default: 115200
+                # platform dependent
+                port:
+                  type: string
+                  default: VIRTUAL
+                # platform dependent
+                printerProfile:
+                  type: string
+                  default: _default
+                # platform dependent
+                connect:
+                  type: object
+                  properties:
+                    hostname:
+                      type: string
+                      example: "connect.prusa3d.com"
+                    port:
+                      type: integer
+                      default: 0
+                    tls:
+                      type: boolean
+                      default: true
+      responses:
+        # Return 200 only, if connect is filled
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  url:
+                    type: string
+                    example: "http://dev.connect.prusa:8080/add-printer/connect/1.3.1/AHWAXF7JZI/Shelf/Home"
+
+        204:
+          description: No Content
+                       No Error
+        403:
+          $ref: "#/components/responses/Unauthorized"
+
+  # platform dependent
+  /api/printerprofiles:
+    get:
+      summary: Retrieve a mock of octoprinter printer profile
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  profiles:
+                    $ref: "#/components/schemas/Profiles"
+        403:
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/printer:
+    get:
+      summary: Retrieve the current printer state
+      parameters:
+        - in: query
+          name: exclude
+          description: A list of attributes to not return in the response.
+          schema:
+            type: array
+            items:
+              type: string
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  temperature:
+                    $ref: "#/components/schemas/TemperatureState"
+                  sd:
+                    $ref: "#/components/schemas/SDState"
+                  state:
+                    $ref: "#/components/schemas/PrinterState"
+                  telemetry:
+                    oneOf:
+                      - $ref: "#/components/schemas/TelemetryFDM"
+                      - $ref: "#/components/schemas/TelemetryMini"
+                      - $ref: "#/components/schemas/TelemetrySL1"
+        403:
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/printer/sd:
+    get:
+      summary: Retrieves the current state of the printer’s SD card.
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SDState"
+        403:
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/printer/printhead:
+    post:
+      summary: Control printhead movement in XYZ axes
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                jog:
+                  type: object
+                  properties:
+                    command:
+                      type: string
+                      example: "jog"
+                    x:
+                      type: number
+                      example: 10
+                    y:
+                      type: number
+                      example: -5
+                    z:
+                      type: number
+                      example: 0.02
+                home:
+                  type: object
+                  properties:
+                    command:
+                      type: string
+                      example: "home"
+                    axes:
+                      type: array
+                      items:
+                        type: string
+                        example: "X"
+                speed:
+                  type: object
+                  properties:
+                    command:
+                      type: string
+                      example: "speed"
+                    factor:
+                      type: number
+                      example: 105
+                feedrate:
+                  type: object
+                  properties:
+                    command:
+                      type: string
+                      example: "feedrate"
+                    factor:
+                      type: number
+                      example: 105
+                disable_steppers:
+                  type: object
+                  properties:
+                    command:
+                      type: string
+                      example: "disable_steppers"
+
+      responses:
+        204:
+          description: No Content
+                       No Error
+        400:
+          $ref: "#/components/responses/BadRequest"
+        409:
+          $ref: "#/components/responses/Conflict"
+
+  /api/printer/tool:
+    post:
+      summary: Control extruder
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                target:
+                  type: object
+                  properties:
+                    command:
+                      type: string
+                      example: "target"
+                    targets:
+                      type: object
+                      properties:
+                        tool0:
+                          type: number
+                          example: 220
+                offset:
+                  type: object
+                  properties:
+                    command:
+                      type: string
+                      example: "offset"
+                    offsets:
+                      type: object
+                      properties:
+                        tool0:
+                          type: number
+                          example: 10
+                select:
+                  type: object
+                  properties:
+                    command:
+                      type: string
+                      example: "select"
+                    tool:
+                      type: string
+                      example: "tool0"
+                extrude:
+                  type: object
+                  properties:
+                    command:
+                      type: string
+                      example: "extrude"
+                    amount:
+                      type: number
+                      example: 5
+                retract:
+                  type: object
+                  properties:
+                    command:
+                      type: string
+                      example: "extrude"
+                    amount:
+                      type: number
+                      example: -3
+                flowrate:
+                  type: object
+                  properties:
+                    command:
+                      type: string
+                      example: "flowrate"
+                    amount:
+                      type: number
+                      example: 95
+      responses:
+        204:
+          description: No Content
+                       No Error
+        400:
+          $ref: "#/components/responses/BadRequest"
+        409:
+          $ref: "#/components/responses/Conflict"
+
+  /api/printer/bed:
+    post:
+      summary: Control bed temperature
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                command:
+                  type: string
+                  example: "target"
+                target:
+                  type: number
+                  example: 75
+
+      responses:
+        204:
+          description: No Content
+                       No Error
+        400:
+          $ref: "#/components/responses/BadRequest"
+        409:
+          $ref: "#/components/responses/Conflict"
+  # MK3
+  # - not supporting this endpoint
+
+  # MINI
+  # - will probably not support this endpoint.
+  # - On error sends plaintext error description in response body
+  # - On error possibly sends Content-Location header with URL to help.prusa3d.com.
+  # - PCL page /error will be ommited
+
+  # SL1
+  # - supports this endpoint
+  # - Response is dependent on Accept header in request
+  # - If no Accept header is present:
+  #   - sends plaintext error description in response body (compatibility with older slicer)
+  #   - sends Content-Location header with URL to <PCL IP>/error (in the future it may send URL to hlep.prusa3d.com)
+  # - if Accept header is present (currently supports only Accept: application/json):
+  #   - sends JSON with same content as this /api/printer/error endpoint (code, title, text, url)
+  #    sends Content-Location header with URL to <PCL IP>/error (in the future it may send URL to hlep.prusa3d.com)
+  /api/printer/error:
+    get:
+      summary: Retrieve the error number and text. Not compatible with OctoPrint.
+      responses:
+        200:
+          description: Custom endpoint to get error details. Client can see if printer is in error state by polling /api/printer
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        403:
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/job: # this should be used instead of /files/preview to determine if project was selected. If "file" object is not null, project was previously selected
+    get:
+      summary: Retrieve information about the current job (if there is one).
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  job:
+                    $ref: "#/components/schemas/Job"
+                  progress:
+                    $ref: "#/components/schemas/Progress"
+                  state:
+                    $ref: "#/components/schemas/State"
+        403:
+          $ref: "#/components/responses/Unauthorized"
+        409:
+          $ref: "#/components/responses/Conflict"
+          description: File not found or wrong format.
+    post:
+      summary: Issue a job command.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                command:
+                  type: string
+                  enum: ["start", "restart", "pause", "cancel"]
+                  default: start
+                action:
+                  type: string
+                  enum: [pause, resume]
+                  default: resume
+      responses:
+        204:
+          description: No Content
+                       No Error
+        403:
+          $ref: "#/components/responses/Unauthorized"
+        409:
+          $ref: "#/components/responses/Conflict"
+          description: If not is project, file not found or printer is printing.
+        501:
+          $ref: "#/components/responses/NotImplemented"
+          description: Unsupported command.
+
+  /api/system/commands:
+    get:
+      summary: Retrieves all configured system commands.
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Commands"
+        403:
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/system/commands/core/reboot:
+    post:
+      summary: Execute system reboot.
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+        400:
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                type: object
+        403:
+          $ref: "#/components/responses/Unauthorized"
+
+
+  /api/system/commands/core/restart:
+    post:
+      summary: Trigger restarting of Prusa-Link.
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+        400:
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                type: object
+        403:
+          $ref: "#/components/responses/Unauthorized"
+
+
+  /api/system/commands/core/shutdown:
+    post:
+      summary: Shutdown whole system.
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+        400:
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                type: object
+        403:
+          $ref: "#/components/responses/Unauthorized"
+
+
+  /api/system/commands/custom/changeexposure:
+    post:
+      summary: Change the exposure times
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                exposureTime: # [ms]
+                  type: integer
+                  example: 6000
+                  nullable: true
+                exposureTimeFirst: # [ms]
+                  type: number
+                  example: 30000
+                  nullable: true
+                exposureTimeCalibration: # [ms]
+                  type: number
+                  example: 30000
+                  nullable: true
+                exposureUserProfile: # [-]
+                  type: number
+                  example: 1
+                  nullable: true
+      responses:
+        204:
+          description: No Content
+                       No Error
+
+  /api/system/commands/custom/resinrefill:
+    post:
+      summary: Update remaining resing in the printer.
+      responses:
+        204:
+          description: No Content
+                       No Error
+
+  /api/access/users:
+    get:
+      summary: Retrieves a list of all registered users in OctoPrint. Currently just a mock.
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  users:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Users"
+        403:
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/settings:
+    get:
+      summary: Returns printer settings info
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  api-key:
+                    type: string
+                  printer:
+                    type: object
+                    properties:
+                      name:
+                        type: string
+                      location:
+                        type: string
+                      farm_mode:
+                        type: boolean
+                      network_error_chime:
+                        type: boolean
+    post:
+      summary: Sets new printer and/or user settings and writes it to ini file
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                  printer:
+                    type: object
+                    properties:
+                      name:
+                        type: string
+                      location:
+                        type: string
+                  user:
+                    type: object
+                    properties:
+                      password:
+                        type: string
+                      username:
+                        type: string
+                      new_password:
+                        type: string
+                      new_repassword:
+                        type: string
+                  farm_mode:
+                    type: boolean
+                  network_error_chime:
+                    type: boolean
+      responses:
+        200:
+          description: OK
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: object
+                    properties:
+                      printer:
+                        type: object
+                        properties:
+                          missing_credentials:
+                            type: boolean
+                      user:
+                        type: object
+                        properties:
+                          username:
+                            type: boolean
+                          password:
+                            type: boolean
+                          repassword:
+                            type: boolean
+                          old_digest:
+                            type: boolean
+                          same_digest:
+                            type: boolean
+
+  /api/settings/apikey:
+    get:
+      summary: Regenerate api key and save it to settings and config file
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /api/settings/sn:
+    post:
+      summary: If printer is in SN error, user can insert new SN
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                serial:
+                  type: string
+                  example: "CZPX4242X042XC42042"
+      responses:
+        200:
+          description: OK
+        400:
+          $ref: "#/components/responses/BadRequest"
+        409:
+          $ref: "#/components/responses/Conflict"
+        507:
+          description: Insufficient Storage
+
+  /api/files/{target}/{path}:
+    parameters:
+      - in: path
+        name: target
+        required: true
+        description: The target location of the file (local, sdcard).
+        schema:
+          type: string
+          default: local
+          enum:
+            - local
+            - sdcard
+      - in: path
+        name: path
+        required: true
+        description: The path to the file.
+        schema:
+          type: string
+    get:
+      summary: Returns metadata from cache file
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  origin:
+                    type: string
+                    example: "local"
+                  name:
+                    type: string
+                    example: "castle.gcode"
+                  path:
+                    type: string
+                    example: "/Prusa Link gcodes/castle.gcode"
+                  type:
+                    type: string
+                    example: "machinecode"
+                  typePath:
+                    type: array
+                    items:
+                      type: string
+                      example: ["machinecode", "gcode"]
+                  refs:
+                    type: object
+                    properties:
+                      resource:
+                        type: string
+                        example: "/api/files/local/Prusa Link gcodes/castle.gcode"
+                      download:
+                        type: string
+                        example: "/api/files/local/Prusa Link gcodes/castle.gcode/raw"
+                      thumbnailSmall:
+                        type: string
+                        example: null
+                      thumbnailBig:
+                        type: string
+                        example: "/api/thumbnails/Prusa Link gcodes/castle.gcode.orig.png"
+                  size:
+                    type: integer
+                    example: 177514
+                  date:
+                    type: integer
+                    example: 1648038843
+                  gcodeAnalysis:
+                    type: object
+                    properties:
+                      estimatedPrintTime:
+                        type: integer
+                        example: 207
+                      material:
+                        type: string
+                        example: "PLA"
+                      layerHeight:
+                        type: number
+                        example: 0.3
+        404:
+          $ref: "#/components/responses/NotFound"
+    post:
+      summary: Start print if no print job is running.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                command:
+                  type: string
+                  example: "select"
+                print:
+                  type: boolean
+                  example: true
+              required:
+                - select
+      responses:
+        204:
+          description: No Content
+                       No Error
+        400:
+          $ref: "#/components/responses/BadRequest"
+        409:
+          $ref: "#/components/responses/Conflict"
+    delete:
+      summary: Terminate the current file download process.
+      responses:
+        204:
+          description: No Content
+                       No Error
+        409:
+          $ref: "#/components/responses/Conflict"
+
+  /api/files/{target}/{path}/raw:
+      parameters:
+        - in: path
+          name: target
+          required: true
+          description: The target location from which to download the file (local, sdcard).
+          schema:
+            type: string
+            default: local
+            enum:
+              - local
+              - sdcard
+        - in: path
+          name: path
+          required: true
+          description: The path to the file.
+          schema:
+            type: string
+      get:
+        summary: Downloads intended gcode
+        responses:
+          200:
+            description: OK
+            content:
+              application/octet-stream:
+                schema:
+                  type: string
+                  format: binary
+          404:
+            $ref: "#/components/responses/NotFound"
+
+  /api/downloads/{target}/{filename}:
+    parameters:
+      - in: path
+        name: target
+        required: true
+        description: The target location to which to download the file (local, sdcard).
+        schema:
+          type: string
+          default: local
+          enum:
+            - local
+            - sdcard
+      - in: path
+        name: filename
+        required: true
+        description: The path within the location to download the file.
+        schema:
+          type: string
+    get:
+      summary: Download a file.
+      responses:
+        200:
+          description: OK
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        403:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        415:
+          $ref: "#/components/responses/UnsupportedMediaType"
+
+  # Ony for compatibility, use /api/transfer where possible
+  /api/download:
+    get:
+      summary: Get information about the file currently being transferred.
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  type:
+                    type: string
+                    enum: [ "NO_TRANSFER", "FROM_WEB", "FROM_CONNECT", "FROM_PRINTER", "FROM_SLICER", "FROM_CLIENT", "TO_CONNECT", "TO_CLIENT"]
+                    example: "FROM_WEB"
+                  url:
+                    type: string
+                    example: "https://www.prusaprinters.org/castle.gcode"
+                  target:
+                    type: string
+                    example: "local"
+                  destination:
+                    type: string
+                    example: "/Prusa Link gcodes/castle.gcode"
+                  path:
+                    type: string
+                    example: "/Prusa Link gcodes/castle.gcode"
+                  size:
+                    type: string
+                    example: "68073825"
+                  start_time:
+                    type: string
+                    example: "1620292282"
+                  progress:
+                    type: string
+                    example: "0.95"
+                  remaining_time:
+                    type: string
+                    example: "281.92677480085825"
+                  to_select:
+                    type: boolean
+                  to_print:
+                    type: boolean
+        204:
+          description: No Content
+                       No Error
+        403:
+          $ref: "#/components/responses/Unauthorized"
+    delete:
+      summary: Terminate the current file download process.
+      responses:
+        204:
+          description: No Content
+                       No Error
+
+  /api/transfer:
+    get:
+      summary: Get information about the file currently being transferred.
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  type:
+                    type: string
+                    example: "FROM_WEB"
+                  url:
+                    type: string
+                    example: "https://www.prusaprinters.org/castle.gcode"
+                  target:
+                    type: string
+                    example: "local"
+                  destination:
+                    type: string
+                    example: "/Prusa Link gcodes/castle.gcode"
+                  path:
+                    type: string
+                    example: "/Prusa Link gcodes/castle.gcode"
+                  size:
+                    type: string
+                    example: "68073825"
+                  start_time:
+                    type: string
+                    example: "1620292282"
+                  progress:
+                    type: string
+                    example: "0.95"
+                  remaining_time:
+                    type: string
+                    example: "281.92677480085825"
+                  to_select:
+                    type: boolean
+                  to_print:
+                    type: boolean
+        204:
+          description: No Content
+                       No Error
+        403:
+          $ref: "#/components/responses/Unauthorized"
+    delete:
+      summary: Terminate the current file download process.
+      responses:
+        204:
+          description: No Content
+                       No Error
+
+  /api/modify/{target}:
+    parameters:
+      - in: path
+        name: target
+        required: true
+        description: The target location to which to move the file (local, sdcard).
+        schema:
+          type: string
+          default: local
+          enum:
+            - local
+            - sdcard
+    post:
+      summary: Move file to different folder or/and rename it.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                source:
+                  type: string
+                destination:
+                  type: string
+              required:
+                - source
+                - destination
+      responses:
+        201:
+          description: Created
+        400:
+          $ref: "#/components/responses/BadRequest"
+        403:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        409:
+          $ref: "#/components/responses/Conflict"
+
+  /api/folder/{target}/{path}:
+    parameters:
+      - in: path
+        name: target
+        required: true
+        description: The target location where to create/delete the folder (local, sdcard).
+        schema:
+          type: string
+          default: local
+          enum:
+            - local
+            - sdcard
+      - in: path
+        name: path
+        required: true
+        description: The path to the folder.
+        schema:
+          type: string
+          example: "archived_gcodes"
+    post:
+      summary: Create a new folder.
+      responses:
+        201:
+          description: Created
+        409:
+          $ref: "#/components/responses/Conflict"
+    delete:
+      summary: Delete a folder.
+      responses:
+        200:
+          description: OK
+        409:
+          $ref: "#/components/responses/Conflict"
+
+  /api/download/{target}:
+    parameters:
+      - in: path
+        name: target
+        required: true
+        description: The target location to which to download the file (local, sdcard).
+        schema:
+          type: string
+          default: local
+          enum:
+            - local
+            - sdcard
+    post:
+      summary: Download the file from url to the destination.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                  url:
+                    type: string
+                  destination:
+                    type: string
+                  to_select:
+                    type: boolean
+                    default: false
+                  to_print:
+                    type: boolean
+                    default: false
+              required:
+                - url
+                - destination
+      responses:
+        201:
+          description: Created
+        403:
+          $ref: "#/components/responses/Unauthorized"
+        409:
+          $ref: "#/components/responses/Conflict"
+          description: Another file is being downloaded or same file is currently being printed.
+
+  /api/files:
+    get:
+      summary: Retrieve all files’ and folders’ information.
+      parameters:
+        - in: header
+          name: If-None-Match
+          description: ETag
+          schema:
+            type: string
+            default: none
+        - in: query
+          name: recursive
+          schema:
+            type: boolean
+            default: false
+
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AllFilesInfo"
+          headers:
+            ETag:
+              schema:
+                type: string
+        403:
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/files/path/{path}:
+    get:
+      summary: Retrieve files’ and folders’ information from specific location.
+      parameters:
+        - in: header
+          name: If-None-Match
+          description: ETag
+          schema:
+            type: string
+            default: none
+        - in: query
+          name: recursive
+          schema:
+            type: boolean
+            default: false
+        - in: path
+          name: target
+          required: true
+          description: Specific location.
+          schema:
+            type: string
+            default: local
+            enum:
+              - local
+              - sdcard
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AllFilesInfo"
+          headers:
+            ETag:
+              schema:
+                type: string
+        403:
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/files/{target}:
+    parameters:
+      - in: path
+        name: target
+        required: true
+        description: The target location to which to upload the file (local, sdcard).
+        schema:
+          type: string
+          default: local
+          enum:
+            - local
+            - sdcard
+    get:
+      summary: Retrieve all files’ and folders’ information for the target location.
+      parameters:
+        - in: header
+          name: If-None-Match
+          description: ETag
+          schema:
+            type: string
+            default: none
+          required: false
+        - in: query
+          name: recursive
+          schema:
+            type: boolean
+            default: false
+          required: false
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AllFilesInfo"
+          headers:
+            ETag:
+              schema:
+                type: string
+        403:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+    post:
+      summary: Upload file or create folder.
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              oneOf:
+                - $ref: "#/components/schemas/UploadFile"
+                - $ref: "#/components/schemas/CreateFolder"
+      responses:
+        201:
+          description: No error
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/FileUploaded"
+                  - $ref: "#/components/schemas/FolderCreated"
+        400:
+          $ref: "#/components/responses/BadRequest"
+          description: Could not create folder or file not found.
+        403:
+          $ref: "#/components/responses/Unauthorized"
+        409:
+          $ref: "#/components/responses/Conflict"
+          description: File already exist.
+        415:
+          $ref: "#/components/responses/UnsupportedMediaType"
+        500:
+          $ref: "#/components/responses/InternalServerError"
+          description: File is too big.
+
+  /api/files/{target}/{filename}:
+    parameters:
+      - in: path
+        name: target
+        required: true
+        description: The target location to which to upload the file (local, sdcard).
+        schema:
+          type: string
+          default: local
+          enum:
+            - local
+            - sdcard
+      - in: path
+        name: filename
+        required: true
+        description: The path within the location to the file or folder.
+        schema:
+          type: string
+          default: example.sl1
+    get:
+      summary: Retrieve a specific file’s or folder’s information.
+      parameters:
+        - in: header
+          name: If-None-Match
+          description: ETag
+          schema:
+            type: string
+            default: none
+          required: false
+        - in: query
+          name: recursive
+          schema:
+            type: boolean
+            default: false
+          required: false
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FileOrFolderInfo"
+          headers:
+            ETag:
+              schema:
+                type: string
+        304:
+          $ref: "#/components/responses/NotModified"
+        403:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+    post:
+      summary: Issue a file command to an existing file.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FileCommand"
+      responses:
+        204:
+          description: No Content
+                       No Error
+        400:
+          $ref: "#/components/responses/BadRequest"
+          description: Mandatory parameter is missing.
+        403:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        409:
+          $ref: "#/components/responses/Conflict"
+          description: If the file is currently being printed.
+        415:
+          $ref: "#/components/responses/UnsupportedMediaType"
+        501:
+          $ref: "#/components/responses/NotImplemented"
+          description: Unsupported command.
+    delete:
+      summary: Delete a file or folder.
+      responses:
+        204:
+          description: No Content
+                       No Error
+        403:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+          description: If location is neither local nor sdcard or the requested file was not found
+        409:
+          $ref: "#/components/responses/Conflict"
+          description: If the file to be deleted is currently being printed
+
+  /api/thumbnails/{path}.orig.png:
+    parameters:
+      - in: path
+        name: path
+        required: true
+        description: The path to the g-code file.
+        schema:
+          type: string
+          example: "Prusa Link gcodes/castle.gcode"
+    get:
+      summary: Return g-code file model preview.
+      responses:
+        200:
+          description: OK
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        404:
+          $ref: "#/components/responses/NotFound"
+
+  /api/logs:
+    get:
+      summary: Return available logs
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  files:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                          description: File name
+                          example: system.log
+                        date:
+                          type: integer
+                          description: Last modified timestamp
+                        size:
+                          type: integer
+                        refs:
+                          type: object
+                          properties:
+                            download:
+                              type: string
+                              description: The download URL for the log file
+
+  /api/logs/{filename}:
+    parameters:
+      - in: path
+        name: filename
+        required: true
+        description: The name of the log
+        schema:
+          type: string
+          example: system.log
+    get:
+      summary: Return log content
+      responses:
+        200:
+          description: OK
+          content:
+            text/plain:
+              schema:
+                type: string
+        404:
+          $ref: "#/components/responses/NotFound"
+
+components:
+  schemas:
+    ConnCurrent:
+      type: object
+      properties:
+        baudrate:
+          type: integer
+          example: 115200
+          nullable: true
+        port:
+          type: string
+          example: VIRTUAL
+          nullable: true
+        printerProfile:
+          type: string
+          example: _default
+        state:
+          $ref: "#/components/schemas/State"
+
+    ConnOptions:
+      type: object
+      properties:
+        ports:
+          type: array
+          items:
+            type: string
+          example: ["VIRTUAL"]
+        baudrates:
+          type: array
+          items:
+            type: integer
+          example: [115200]
+        printerProfiles:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                example: _default
+              name:
+                type: string
+                example: Prusa SL1
+
+    ConnConfig:
+      type: object
+      properties:
+          hostname:
+            type: string
+            example: "connect.prusa3d.com"
+          port:
+            type: integer
+            default: 0
+          tls:
+            type: boolean
+            default: true
+          registration:
+            type: string
+            example: "IN_PROGRESS"
+          code:
+            type: string
+            example: "3Y2K12SQ42"
+
+    ConnStates:
+      type: object
+      properties:
+        printer:
+          type: object
+          properties:
+            ok:
+              type: boolean
+              example: false
+            message:
+              type: string
+              example: "Serial port cannot be obtained"
+        connect:
+          type: object
+          properties:
+            ok:
+              type: boolean
+              nullable: true
+              example: true
+            message:
+              type: string
+              example: "OK"
+
+    Commands:
+      type: object
+      properties:
+        core:
+          type: array
+          example: []
+          items:
+            type: object
+            nullable: true
+        custom:
+          oneOf:
+            #- $ref: "#/components/schemas/CommandsFDM"
+            - $ref: "#/components/schemas/CommandsSLA"
+
+    #CommandsFDM:
+
+    CommandsSLA:
+      type: array
+      items:
+        $ref: "#/components/schemas/SystemCommand"
+
+    SystemCommand:
+      type: object
+      properties:
+        action:
+          type: string
+        name:
+          type: string
+        confirm:
+          type: string
+          nullable: true
+        source:
+          type: string
+        resource:
+          type: string
+      default: [
+        {
+          "action": "resinrefill", # Updates remaining resin in the printer
+          "name": "Refill resin",
+          "source": "custom",
+          "resource": "http://localhost/api/system/commands/custom/resinrefill"
+        },
+        {
+          "action": "changeexposure",
+          "name": "Change exposure times",
+          "source": "custom",
+          "resource": "http://localhost/api/system/commands/custom/changeexposure"
+        },
+      ]
+
+    Profiles:
+      type: object
+      properties:
+        _default:
+          type: object
+          properties:
+            id:
+              type: string
+              example: _default
+            name:
+              type: string
+              example: Original Prusa SL1
+            model:
+              type: string
+              example: Original Prusa SL1
+            color:
+              type: string
+              example: default
+            current:
+              type: boolean
+              example: true
+            default:
+              type: boolean
+              example: true
+            heatedBed: # Original Prusa SL1 uses for CPU temperature
+              type: boolean
+              example: true
+            heatedChamber: # Original Prusa SL1 uses for ambient temp
+              type: boolean
+              example: true
+            extruder: # Original Prusa SL1 uses for UV LED temp
+              type: object
+              properties:
+                count:
+                  type: integer
+                  description: Number of print heads
+                  example: 1
+                offsets:
+                  type: array
+                  items:
+                    type: array
+                    items:
+                      type: number
+                    example: [0.0, 0.0]
+            resource:
+              type: string
+              example: http://localhost/api/printerprofiles/_default
+
+    TemperatureData:
+      type: object
+      properties:
+        actual:
+          type: number
+          description: Current temperature
+        target:
+          type: number
+          description: Target temperature
+          nullable: true
+        # platform dependent
+        offset:
+          type: number
+          nullable: true
+          description: Currently configured temperature offset to apply.
+      example:
+        actual: 22.5
+        target: 50.0
+        # platform dependent
+        offset: 1.0
+
+    TemperatureState:
+      type: object
+      properties:
+        tool0:
+          $ref: "#/components/schemas/TemperatureData"
+        bed:
+          $ref: "#/components/schemas/TemperatureData"
+        # platform dependent
+        chamber:
+          $ref: "#/components/schemas/TemperatureData"
+
+    SDState:
+      type: object
+      properties:
+        ready:
+          type: boolean
+          example: false
+
+    PrinterState:
+      type: object
+      properties:
+        text:
+          $ref: "#/components/schemas/State"
+        flags:
+          type: object
+          properties:
+            operational:
+              type: boolean
+              example: false
+            paused:
+              type: boolean
+              example: false
+            printing:
+              type: boolean
+              example: true
+            cancelling:
+              type: boolean
+              example: false
+            pausing:
+              type: boolean
+              example: false
+            sdReady:
+              type: boolean
+              example: false
+            error: # this will indicate printer has an error to show in /api/priner/error
+              type: boolean
+              example: false
+            ready:
+              type: boolean
+              example: true
+            closedOrError:
+              type: boolean
+              example: false
+            finished:
+              type: boolean
+              example: true
+            prepared:
+              type: boolean
+              example: true
+            # platform dependent
+            busy:
+              type: boolean
+              example: false
+            link_state:
+              type: string
+              enum: ["IDLE", "BUSY", "PRINTING", "PAUSED", "FINISHED", "STOPPED", "ERROR", "ATTENTION", "READY"]
+
+    Job:
+      oneOf:
+        - $ref: "#/components/schemas/JobFDM"
+        - $ref: "#/components/schemas/JobSLA"
+      type: object
+      properties:
+        estimatedPrintTime:
+          type: integer
+          description: Estimated print time for the file in seconds.
+          nullable: true
+        averagePrintTime:
+          type: integer
+          description: Average print time for the file in seconds
+          nullable: true
+        lastPrintTime:
+          type: integer
+          description: Last print time for the file in seconds
+          nullable: true
+        filament:
+          type: string
+          description: Job filament type
+          nullable: true
+        file:
+          oneOf:
+            - $ref: "#/components/schemas/JobFileFDM"
+            - $ref: "#/components/schemas/JobFileSLA"
+          type: object
+          properties:
+            name:
+              type: string
+              description: The name of the file without path.
+              example: "harry_potter_hogwarts_anthony_mohimont.sl1"
+              nullable: true
+            path:
+              type: string
+              description: The name of the file with path.
+              example: "internal/examples/harry_potter_hogwarts_anthony_mohimont.sl1"
+              nullable: true
+            origin:
+              enum: ["local", "sdcard"]
+              nullable: true
+            date:
+              type: integer
+              description: Unix timestamp.
+              example: 1574175255
+              nullable: true
+            size:
+              type: integer
+              description: The size of the file in bytes.
+              example: 873151
+              nullable: true
+            # platform dependent
+            display:
+              type: string
+              description: The name of the file without path
+              example: "harry_potter_hogwarts_anthony_mohimont.sl1"
+              nullable: true
+            # platform dependent
+            refs:
+              type: object
+              properties:
+                resource:
+                  type: string
+                thumbnailBig:
+                  type: string
+                  nullable: true
+        user:
+          type: string
+          example: "_api"
+
+    Progress:
+      oneOf:
+        - $ref: "#/components/schemas/ProgressMK3"
+        - $ref: "#/components/schemas/ProgressMini"
+        - $ref: "#/components/schemas/ProgressSL1"
+      type: object
+      properties:
+        completion:
+          type: number
+          description: Percentage of completion of the current job.
+          nullable: true
+          example: 55.6349010
+        filepos:
+          type: integer
+          description: Current position in the file being printed, in bytes from the beginning. Not being used for SL1.
+          nullable: true
+          example: 12345
+        printTime:
+          type: integer
+          description: Time already spent printing in seconds.
+          nullable: true
+          example: 601
+        printTimeLeft:
+          type: integer
+          description: Estimate of time left to print in seconds.
+          nullable: true
+          example: 30495
+
+    ProgressMK3:
+      type: object
+      properties:
+        pos_z_mm:
+          type: number
+        printSpeed:
+          type: integer
+        flow_factor:
+          type: integer
+        completion:
+          type: number
+        filepos:
+          type: integer
+        printTime:
+          type: integer
+        printTimeLeft:
+          type: integer
+        printTimeLeftOrigin:
+          type: string
+
+    ProgressMini:
+      type: object
+      properties:
+        pos_z_mm:
+          type: number
+        printSpeed:
+          type: number
+        flow_factor:
+          type: number
+        filament_status: # shouldn't it be filamentSensor?
+          type: string
+
+    ProgressSL1:
+      type: object
+      properties:
+        currentLayer:
+          type: integer
+          description: Number of current layer being printed.
+          nullable: true
+          example: 42
+
+    Users:
+      type: object
+      properties:
+        active:
+          type: boolean
+          example: true
+        admin:
+          type: boolean
+          example: true
+        apikey:
+          type: string
+          nullable: true
+        name:
+          type: string
+          example: prusa
+        settings:
+          type: object
+          example: null
+        user:
+          type: boolean
+          example: true
+
+    CommonFileInfo:
+      type: object
+      properties:
+        origin:
+          type: string
+          example: local
+        path:
+          type: string
+        display:
+          type: string
+        name:
+          type: string
+        size:
+          type: integer
+          example: 873151
+        type:
+          type: string
+        typePath:
+          type: array
+          items:
+            type: string
+
+    FileInfo:
+      allOf:
+        - $ref: "#/components/schemas/CommonFileInfo"
+        - type: object
+      properties:
+        refs:
+          type: object
+          properties:
+            resource:
+              type: string
+            download:
+              type: string
+            thumbnailSmall: # do not send if metadata not ready
+              type: string
+              nullable: true
+            thumbnailBig: # do not send if metadata not ready
+              type: string
+              nullable: true
+        gcodeAnalysis:
+          type: object
+          properties:
+            estimatedPrintTime: # do not send if metadata not ready
+              type: integer # [s]
+              description: estimated print time in [s].
+              nullable: true
+            material: # do not send if metadata not ready
+              type: string
+              description: String with used material. It is not compatible with OctoPrint.
+              nullable: true
+            layerHeight: # do not send if metadata not ready
+              type: number # [mm]
+              description: Layer height of the file in [mm]. It is not compatible with OctoPrint.
+        hash:
+          type: string
+        date:
+          type: integer
+          description: Unix timestamp of last modified date [s]. It is not compatible with OctoPrint.
+      default:
+        origin: local
+        path: internal/examples/harry_potter_hogwarts_a_mohimont.sl1
+        display: harry_potter_hogwarts_a_mohimont.sl1
+        name: harry_potter_hogwarts_a_mohimont.sl1
+        size: 873151
+        date: 1574156567
+        type: machinecode
+        typePath: [machinecode, gcode]
+        hash: 5f972cc1cfb91f91f7c70d0dff6a0462a9de1d41
+        refs:
+          resource: http://localhost/api/files/local/internal/examples/harry_potter_hogwarts_a_mohimont.sl1
+          download: http://localhost/api/downloads/local/internal/examples/harry_potter_hogwarts_a_mohimont.sl1
+          thumbnailSmall: http://localhost/api/thumbnails/tmpy36n51rt/thumbnail/thumbnail400x400.png
+          thumbnailBig: http://localhost/api/thumbnails/tmpy36n51rt/thumbnail/thumbnail800x480.png
+        gcodeAnalysis:
+          estimatedPrintTime: 2445
+          material: "Prusa Orange Tough"
+          layerHeight: 0.025
+
+    FolderInfo:
+      allOf:
+        - $ref: "#/components/schemas/CommonFileInfo"
+        - type: object
+      properties:
+        refs:
+          type: object
+          properties:
+            resource:
+              type: string
+        children:
+          type: array
+          items:
+            type: object
+      example:
+        origin: local
+        path: internal/examples
+        display: examples
+        name: examples
+        size: 873151
+        type: folder
+        typePath: [folder]
+        refs:
+          resource: http://localhost/api/files/local/internal/examples
+
+    FullFolderInfo:
+      allOf:
+        - $ref: "#/components/schemas/FolderInfo"
+        - type: object
+      properties:
+        children:
+          type: array
+          items:
+            oneOf:
+              - $ref: "#/components/schemas/FileInfo"
+              - $ref: "#/components/schemas/FolderInfo"
+            discriminator:
+              propertyName: type
+
+    FileOrFolderInfo:
+      oneOf:
+        - $ref: "#/components/schemas/FileInfo"
+        - $ref: "#/components/schemas/FullFolderInfo"
+
+    AllFilesInfo:
+      type: object
+      properties:
+        files:
+          type: array
+          items:
+            oneOf:
+              - $ref: "#/components/schemas/FileInfo"
+              - $ref: "#/components/schemas/FullFolderInfo"
+        free:
+          type: integer
+        # platform dependent
+        total:
+          type: integer
+
+    FileCommand:
+      type: object
+      properties:
+        command:
+          type: string
+          enum: [select, copy, move]
+          default: select
+
+    CreateFolder:
+      properties:
+        path:
+          type: string
+          description: The path within the location to upload the file to or create the folder.
+        foldername:
+          type: string
+          description: The name of the folder to create. Ignored when uploading a file.
+      required:
+        - path
+        - foldername
+
+    UploadFile:
+      properties:
+        path:
+          type: string
+          default: subfolder
+          description: The path within the location to upload the file to or create the folder.
+        file:
+          type: string
+          format: binary
+          default: test.gcode
+          description: The file to upload, including a valid filename.
+        select:
+          type: string
+          default: true
+          description: Whether to select the file directly after upload (true) or not (false). Defaults to true.
+      required:
+        - path
+        - file
+
+    FileUploaded:
+      type: object
+      properties:
+        done:
+          type: boolean
+        files:
+          type: object
+          properties:
+            local:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: harry_potter_hogwarts_a_mohimont.sl1
+                origin:
+                  type: string
+                  example: local
+                path:
+                  type: string
+                  example: internal/examples/harry_potter_hogwarts_a_mohimont.sl1
+                refs:
+                  type: object
+                  properties:
+                    resource:
+                      type: string
+                      example: http://localhost/api/files/local/internal/examples/harry_potter_hogwarts_a_mohimont.sl1
+                    download:
+                      type: string
+                      example: http://localhost/api/downloads/local/internal/examples/harry_potter_hogwarts_a_mohimont.sl1
+
+    FolderCreated:
+      type: object
+      properties:
+        done:
+          type: boolean
+        folder:
+          type: object
+          properties:
+            name:
+              type: string
+            origin:
+              type: string
+            path:
+              type: string
+            refs:
+              type: object
+              properties:
+                resource:
+                  type: string
+
+    State:
+      type: string
+      enum: [
+        "Operational",
+        "Printing",
+        "Pausing",
+        "Paused",
+        "Cancelling",
+        "Error",
+        "Offline",
+        "Busy",
+      ]
+      example: "Operational"
+
+    TelemetryFDM:
+      type: object
+      properties:
+        temp_bed:
+          type: number
+        temp_nozzle:
+          type: number
+        material:
+          type: string
+        z-height:
+          type: number
+        print-speed:
+          type: integer
+        axis_x:
+          type: number
+        axis_y:
+          type: number
+        axis_z:
+          type: number
+
+    TelemetryMini:
+      type: object
+      properties:
+        temp_bed:
+          type: number
+        temp_nozzle:
+          type: number
+        material:
+          type: string
+
+    TelemetrySL1:
+      type: object
+      properties:
+        fanUvLed:
+          type: integer
+          example: 2000
+        fanBlower:
+          type: integer
+          example: 3333
+        fanRear:
+          type: integer
+          example: 1000
+        coverClosed:
+          type: boolean
+          example: true
+        tempAmbient:
+          type: number
+          example: 23.4
+        tempCpu:
+          type: number
+          example: 46.9
+        tempUvLed:
+          type: number
+          example: 52.6
+
+    JobFileFDM:
+      type: object
+      properties:
+        name:
+          type: string
+          example: "Skeleton.gcode"
+        path:
+          type: string
+          example: "/Prusa Link gcodes/Skeleton.gcode"
+        size:
+          type: integer
+          example: 404942
+        origin:
+          type: string
+          example: "local"
+        date:
+          type: integer
+          example: 1533095642
+        display:
+          type: string
+          example: "Skeleton.gcode"
+
+
+    JobFileSLA:
+      type: object
+      properties:
+        layers:
+          type: integer
+          description: Total number of layers
+          example: 12345
+          nullable: true
+        layerHeight: # [mm]
+          type: number
+          example: 0.025
+        exposureTime: # [ms]
+          type: integer
+          example: 6000
+          nullable: true
+        exposureTimeFirst: # [ms]
+          type: number
+          example: 30000
+          nullable: true
+        exposureTimeCalibration: # [ms]
+          type: number
+          example: 30000
+          nullable: true
+        exposureUserProfile: # [-]
+          type: number
+          example: 1
+          nullable: true
+
+    JobFDM:
+      type: object
+      properties:
+        filament:
+          type: object
+          properties:
+            length:
+              type: number
+              description: Length of filament used in mm.
+              nullable: true
+            volume:
+              type: number
+              description: Volume in filament used in cm3.
+              nullable: true
+          nullable: true
+
+    JobSLA:
+      type: object
+      properties:
+        resin:
+          type: object
+          properties:
+            remaining:
+              type: number
+              description: Volume of remaining resin in the tank [ml].
+              nullable: true
+              example: 134.5
+            consumed:
+              type: number
+              description: Volume of already consumed resin in the tank [ml].
+              nullable: true
+              example: 22.4
+          nullable: true
+
+    Error:
+      type: object
+      properties:
+        code:
+          type: string
+          description: Prusa error code. Mus be string if we will have printer with code for example 04
+          example: "10108"
+        title:
+          type: string
+          description: Prusa error text string with prefilled variable macros.
+          example: "RESIN TOO LOW"
+        text:
+          type: string
+          description: Prusa error text string with prefilled variable macros.
+          example: "Measured resin volume 22.4 ml is lower than required for this print. Refill the tank and restart the print."
+        url:
+          type: string
+          description: Link to the Prusa help page
+          example: "https://help.prusa3d.com/en/10108/LHE3Q0I1"
+      required:
+        - title
+        - text
+
+    ResponsePlaintext:
+      type: string
+      default: "Project with same name has been already uploaded."
+      description: Prusa error message (raw_message)
+
+  headers:
+    Accept: # Slicer doesn't have to use this. If the header is not present, it defaults to: text/plain
+      required: false
+      schema:
+        type: string
+        default: application/json
+      description: Parameter specifying supported data format from client. PCL has to support it
+    Content-Location:
+      required: true
+      schema:
+        type: string
+        default: "http://<PCL IP>/error"
+      description: URI path to nice error page. We can send URI to help.prusa3d.com in the future.
+
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+
+  responses:
+    NotModified: # 304
+      description: Not Modified
+      headers:
+        Content-Location:
+          $ref: "#/components/headers/Content-Location"
+      content:
+        text/plain:
+          schema:
+            $ref: "#/components/schemas/ResponsePlaintext"
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+
+    BadRequest: # 400
+      description: Bad Request
+      headers:
+        Content-Location:
+          $ref: "#/components/headers/Content-Location"
+      content:
+        text/plain:
+          schema:
+            $ref: "#/components/schemas/ResponsePlaintext"
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+
+    Unauthorized: # 401
+      description: Unauthorized
+      headers:
+        Content-Location:
+          $ref: "#/components/headers/Content-Location"
+      content:
+        text/plain:
+          schema:
+            $ref: "#/components/schemas/ResponsePlaintext"
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+
+    Forbidden: # 403
+      description: Forbidden
+      headers:
+        Content-Location:
+          $ref: "#/components/headers/Content-Location"
+      content:
+        text/plain:
+          schema:
+            $ref: "#/components/schemas/ResponsePlaintext"
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+
+    NotFound: # 404
+      description: Not Found
+      headers:
+        Content-Location:
+          $ref: "#/components/headers/Content-Location"
+      content:
+        text/plain:
+          schema:
+            $ref: "#/components/schemas/ResponsePlaintext"
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+
+    Conflict: # 409
+      description: Conflict
+      headers:
+        Content-Location:
+          $ref: "#/components/headers/Content-Location"
+      content:
+        text/plain:
+          schema:
+            $ref: "#/components/schemas/ResponsePlaintext"
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+
+    UnsupportedMediaType: # 415
+      description: Unsupported Media Type
+      headers:
+        Content-Location:
+          $ref: "#/components/headers/Content-Location"
+      content:
+        text/plain:
+          schema:
+            $ref: "#/components/schemas/ResponsePlaintext"
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+
+    InternalServerError: # 500
+      description: Internal Server Error
+      headers:
+        Content-Location:
+          $ref: "#/components/headers/Content-Location"
+      content:
+        text/plain:
+          schema:
+            $ref: "#/components/schemas/ResponsePlaintext"
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+
+    NotImplemented: # 501
+      description: Not Implemented
+      headers:
+        Content-Location:
+          $ref: "#/components/headers/Content-Location"
+      content:
+        text/plain:
+          schema:
+            $ref: "#/components/schemas/ResponsePlaintext"
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
