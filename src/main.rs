@@ -25,6 +25,7 @@ enum State {
 }
 
 async fn update_wled(completion: f64, cfg: &Config) -> Result<()> {
+    // percentage effect intensity (200 is 0, every two down will light up next segment)
     let ix = 200.0 - (0.35 * completion * 100.0);
     println!(
         "Progress: {:.1}%, setting WLED intensity to {:.0}",
@@ -34,7 +35,18 @@ async fn update_wled(completion: f64, cfg: &Config) -> Result<()> {
 
     let ix = ix.round().clamp(0.0, 255.0) as u8;
 
-    let payload = format!(r#"{{"on":true,"seg":[{{"fx":98,"ix":{}}}]}}"#, ix);
+    // percentage effect, pursa orange color
+    let payload = format!(
+        r#"{{
+        "on": true,
+        "seg": [{{
+            "ix":{},
+            "fx":98,
+            "col":[[234,94,26]]
+        }}]
+    }}"#,
+        ix
+    );
 
     cfg.client
         .post(format!("{}/json/state", cfg.wled_ip))
@@ -135,6 +147,7 @@ async fn main() -> Result<()> {
         tokio::select! {
             _ = tokio::time::sleep(sleep_duration) => {
                 // State machine: determine next state and action
+
                 match state {
                     State::NoConnection => {
                         print!("Checking connection... ");
