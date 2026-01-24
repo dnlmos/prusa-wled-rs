@@ -196,7 +196,7 @@ pub struct ExtruderInfo {
 // PRINTER STATE TYPES
 // ============================================================================
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "PascalCase")]
 pub enum State {
     Operational,
@@ -306,8 +306,8 @@ pub struct TelemetryFDM {
     pub z_height: f64,
     #[serde(rename = "print-speed")]
     pub print_speed: u32,
-    pub axis_x: f64,
-    pub axis_y: f64,
+    pub axis_x: Option<f64>,
+    pub axis_y: Option<f64>,
     pub axis_z: f64,
 }
 
