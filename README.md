@@ -10,17 +10,17 @@ A tiny **finite‑state automaton** that talks to a Prusa printer and drives a W
 ## Quick start  
 
 ```bash
-# 1️⃣ Clone & build
+# Clone & build
 git clone https://github.com/dnlmos/prusa-wled-rs.git
 cd prusa-wled-rs
 cargo build --release
 
-# 2️⃣ Set environment (you can put these in a .env file)
+# Set environment (you can put these in a .env file)
 export PRINTER_IP="192.168.1.42"
 export PRINTER_API_KEY="your‑printer‑api‑key"
 export WLED_IP="192.168.1.77"
 
-# 3️⃣ Run
+# Run
 ./target/release/prusa-wled-rs
 ```
 
