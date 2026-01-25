@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use std::fmt;
 
 /// Simple RGB colour type (0‑255 per channel)
@@ -41,21 +42,6 @@ impl Color {
             Color::Busy => Rgb(255, 20, 147),       // deep‑pink – needs attention
             Color::Finished => Rgb(0, 200, 0),
             Color::Heating => Rgb(255, 165, 0),
-        }
-    }
-
-    pub const fn hex(self) -> &'static str {
-        match self {
-            Color::Operational => "#228B22",
-            Color::Printing => "#1E90FF",
-            Color::Pausing => "#FFA500",
-            Color::Paused => "#FFD700",
-            Color::Cancelling => "#696969",
-            Color::Error => "#DC143C",
-            Color::Offline => "#808080",
-            Color::Busy => "#FF1493",
-            Color::Finished => "#00C800",
-            Color::Heating => "#FFA500",
         }
     }
 }
