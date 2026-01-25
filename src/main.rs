@@ -5,10 +5,9 @@ use crate::{
     colors::Color,
     models::{ConnectionResponse, JobResponse, PrinterResponse, Progress, endpoints},
 };
-use anyhow::Result;
-use reqwest::{Client, ClientBuilder};
+use anyhow::{Context, Result};
+use reqwest::blocking::{Client, ClientBuilder};
 use std::{env, time::Duration};
-use tokio::signal;
 
 #[derive(Debug, Clone)]
 struct Config {
@@ -30,14 +29,12 @@ enum State {
     Heating,
 }
 
-async fn update_wled(completion: f64, color: Color, cfg: &Config) -> Result<()> {
+fn update_wled(completion: f64, color: Color, cfg: &Config) -> Result<()> {
     // percentage effect intensity (200 is 0, every two down will light up next segment)
     let ix = 200.0 - (0.35 * completion * 100.0);
     println!(
-        "Progress: {:.1}%, setting WLED intensity to {:.0} | Code {:?}",
-        completion * 100.0,
-        ix,
-        color
+        "Progress: {:.1}, setting WLED intensity to {:.0} | Code {:?}",
+        completion, ix, color
     );
 
     let ix = ix.round().clamp(0.0, 255.0) as u8;
@@ -60,8 +57,7 @@ async fn update_wled(completion: f64, color: Color, cfg: &Config) -> Result<()> 
         .post(format!("{}/json/state", cfg.wled_ip))
         .header("Content-Type", "application/json")
         .body(payload)
-        .send()
-        .await?;
+        .send()?;
 
     Ok(())
 }
@@ -71,52 +67,44 @@ struct WledState {
     raw_json: String,
 }
 
-async fn fetch_wled_state(cfg: &Config) -> Result<WledState> {
+fn fetch_wled_state(cfg: &Config) -> Result<WledState> {
     let resp = cfg
         .client
         .get(format!("{}/json/state", cfg.wled_ip))
-        .send()
-        .await?
-        .text()
-        .await?;
+        .send()?
+        .text()?;
 
     Ok(WledState { raw_json: resp })
 }
 
-async fn restore_wled_state(cfg: &Config, state: WledState) -> Result<()> {
+fn restore_wled_state(cfg: &Config, state: WledState) -> Result<()> {
     println!("Restoring state");
     let _resp = cfg
         .client
         .post(format!("{}/json/state", cfg.wled_ip))
         .body(state.raw_json)
-        .send()
-        .await?;
+        .send()?;
 
     Ok(())
 }
 
-async fn check_connection(cfg: &Config) -> Result<bool> {
+fn check_connection(cfg: &Config) -> Result<bool> {
     let _connection: ConnectionResponse = cfg
         .client
         .get(format!("{}{}", cfg.printer_ip, endpoints::CONNECTION))
         .header("X-Api-Key", &cfg.api_key)
-        .send()
-        .await?
-        .json()
-        .await?;
-
+        .send()?
+        .json()?;
     Ok(true)
 }
 
-async fn get_job_progress(cfg: &Config) -> Result<Option<f64>> {
+fn get_job_progress(cfg: &Config) -> Result<Option<f64>> {
     let resp: JobResponse = cfg
         .client
         .get(format!("{}{}", cfg.printer_ip, endpoints::JOB))
         .header("X-Api-Key", &cfg.api_key)
-        .send()
-        .await?
-        .json()
-        .await?;
+        .send()?
+        .json()?;
 
     if let Progress::Mk3(progress) = resp.progress {
         Ok(progress.common.completion)
@@ -125,20 +113,18 @@ async fn get_job_progress(cfg: &Config) -> Result<Option<f64>> {
     }
 }
 
-async fn get_printer_status(cfg: &Config) -> Result<PrinterResponse> {
+fn get_printer_status(cfg: &Config) -> Result<PrinterResponse> {
     let resp: PrinterResponse = cfg
         .client
         .get(format!("{}{}", cfg.printer_ip, endpoints::PRINTER))
         .header("X-Api-Key", &cfg.api_key)
-        .send()
-        .await?
-        .json()
-        .await?;
+        .send()?
+        .json()?;
     Ok(resp)
 }
 
-async fn get_heating_progress(cfg: &Config) -> Result<f64> {
-    let status = get_printer_status(cfg).await?;
+fn get_heating_progress(cfg: &Config) -> Result<f64> {
+    let status = get_printer_status(cfg).context("Failed to retrieve printer status")?;
 
     let temps = &status.temperature;
 
@@ -152,8 +138,10 @@ async fn get_heating_progress(cfg: &Config) -> Result<f64> {
     Ok(actual / target)
 }
 
-#[tokio::main]
-async fn main() -> Result<()> {
+fn main() -> Result<()> {
+    let pid = std::process::id();
+    println!("Process ID: {}", pid);
+
     dotenv::dotenv().ok();
     let cfg = Config {
         printer_ip: env::var("PRINTER_IP")?,
@@ -173,8 +161,8 @@ async fn main() -> Result<()> {
     let mut state = State::NoConnection;
     let mut saved_wled_state: Option<WledState> = None;
 
+    // finite state automata
     loop {
-        // Determine sleep duration based on current state
         let sleep_duration = match state {
             State::NoConnection => cfg.connection_check_interval,
             State::Connected => cfg.job_check_interval,
@@ -182,106 +170,99 @@ async fn main() -> Result<()> {
             State::Heating => cfg.heating_update_interval,
         };
 
-        // Wait for next tick or Ctrl+C
-        tokio::select! {
-            _ = tokio::time::sleep(sleep_duration) => {
-                match state {
-                    State::NoConnection => {
-                        print!("Checking connection... ");
-                        match check_connection(&cfg).await {
-                            Ok(true) => {
-                                println!("✓ Connected");
-                                state = State::Connected;
+        std::thread::sleep(sleep_duration);
 
-                                // Save WLED state on job start
-                                if saved_wled_state.is_none() {
-                                    saved_wled_state = fetch_wled_state(&cfg).await.ok();
-                                    println!("WLED state saved");
-                                }
+        match state {
+            State::NoConnection => {
+                print!("Checking connection... ");
+                match check_connection(&cfg) {
+                    Ok(true) => {
+                        println!("✓ Connected");
+                        state = State::Connected;
 
-                                update_wled(1.0, Color::Operational, &cfg).await?;
-                            }
-                            Ok(false) | Err(_) => {
-                                println!("✗ No connection");
-                                if let Some(wled_state) = saved_wled_state.clone(){
-                                    restore_wled_state(&cfg, wled_state).await.ok();
-                                    saved_wled_state=None;
-                                }
-                            }
+                        if saved_wled_state.is_none() {
+                            saved_wled_state = fetch_wled_state(&cfg).ok();
+                            println!("WLED state saved");
+                        }
+
+                        if let Err(e) = update_wled(1.0, Color::Operational, &cfg) {
+                            eprintln!("Failed to update WLED: {:#}", e);
                         }
                     }
-
-                    State::Connected => {
-                        print!("Checking for job... ");
-
-                        match get_job_progress(&cfg).await {
-                            Ok(Some(completion)) => {
-                                println!("✓ Job found at {:.1}%", completion * 100.0);
-                                state = match get_heating_progress(&cfg).await {
-                                    Ok(p) if p < 90.0 => State::Heating,
-                                    _ => State::JobActive,
-                                };
-                            }
-                            Ok(None) => {
-                                println!("✗ No active job");
-                            }
-                            Err(e) => {
-                                eprintln!("✗ Connection lost: {:#}", e);
-                                state = State::NoConnection;
-                            }
-                        }
-                    }
-
-                    State::Heating=> {
-                        let heating_progress = get_heating_progress(&cfg).await?;
-                        println!("Heating progress: {}", heating_progress);
-                        update_wled(heating_progress, Color::Heating, &cfg).await?;
-                        if heating_progress>0.90{
-                            state=State::JobActive
-                        }
-                    }
-
-                    State::JobActive => {
-                        println!("job active");
-                        match get_job_progress(&cfg).await {
-                            Ok(Some(completion)) => {
-                                if let Err(e) = update_wled(completion,Color::Printing, &cfg).await {
-                                    eprintln!("Failed to update WLED: {:#}", e);
-                                }
-                            }
-                            Ok(None) => {
-                                println!("Job completed!");
-                                update_wled(1.0,Color::Finished,&cfg).await?;
-                                state = State::Connected;
-                            }
-                            Err(e) => {
-                                eprintln!("Connection lost: {:#}", e);
-
-                                // Restore WLED state
-                                if let Some(wled_state) = saved_wled_state.clone()
-                                    && let Err(e) = restore_wled_state(&cfg, wled_state).await {
-                                        eprintln!("Failed to restore WLED: {:#}", e);
-                                    }
-
-                                state = State::NoConnection;
-                            }
+                    Ok(false) | Err(_) => {
+                        println!("✗ No connection");
+                        if let Some(wled_state) = saved_wled_state.clone() {
+                            restore_wled_state(&cfg, wled_state).ok();
+                            saved_wled_state = None;
                         }
                     }
                 }
             }
 
-            _ = signal::ctrl_c() => {
-                println!("\nShutting down...");
-
-                // Restore WLED state if a job was active
-                if let Some(wled_state) = saved_wled_state {
-                    restore_wled_state(&cfg, wled_state).await.ok();
+            State::Connected => {
+                print!("Checking for job... ");
+                match get_job_progress(&cfg) {
+                    Ok(Some(completion)) => {
+                        println!("✓ Job found at {:.1}%", completion * 100.0);
+                        state = match get_heating_progress(&cfg) {
+                            //
+                            Ok(p) if p < 0.97 => State::Heating,
+                            _ => State::JobActive,
+                        };
+                    }
+                    Ok(None) => {
+                        println!("✗ No active job");
+                    }
+                    Err(e) => {
+                        eprintln!("✗ Connection lost: {:#}", e);
+                        state = State::NoConnection;
+                    }
                 }
+            }
 
-                break;
+            State::Heating => match get_heating_progress(&cfg) {
+                Ok(heating_progress) => {
+                    println!("Heating progress: {}", heating_progress);
+                    if let Err(e) = update_wled(heating_progress, Color::Heating, &cfg) {
+                        eprintln!("Failed to update WLED: {:#}", e);
+                    }
+                    if heating_progress > 0.90 {
+                        state = State::JobActive
+                    }
+                }
+                Err(e) => {
+                    eprintln!("Failed to fetch heating progress: {:#}", e);
+                }
+            },
+
+            State::JobActive => {
+                println!("job active");
+                match get_job_progress(&cfg) {
+                    Ok(Some(completion)) => {
+                        if let Err(e) = update_wled(completion, Color::Printing, &cfg) {
+                            eprintln!("Failed to update WLED: {:#}", e);
+                        }
+                    }
+                    Ok(None) => {
+                        println!("Job completed!");
+                        if let Err(e) = update_wled(1.0, Color::Finished, &cfg) {
+                            eprintln!("Failed to update WLED: {:#}", e);
+                        }
+                        state = State::Connected;
+                    }
+                    Err(e) => {
+                        eprintln!("Connection lost: {:#}", e);
+
+                        if let Some(wled_state) = saved_wled_state.clone()
+                            && let Err(e) = restore_wled_state(&cfg, wled_state)
+                        {
+                            eprintln!("Failed to restore WLED: {:#}", e);
+                        }
+
+                        state = State::NoConnection;
+                    }
+                }
             }
         }
     }
-
-    Ok(())
 }
