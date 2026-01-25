@@ -181,8 +181,13 @@ fn main() -> Result<()> {
                         state = State::Connected;
 
                         if saved_wled_state.is_none() {
-                            saved_wled_state = fetch_wled_state(&cfg).ok();
-                            println!("WLED state saved");
+                            match fetch_wled_state(&cfg) {
+                                Ok(fetched_state) => {
+                                    saved_wled_state = Some(fetched_state);
+                                    println!("WLED state saved");
+                                }
+                                Err(e) => eprintln!("Failed to fetch WLED state: {:#}", e),
+                            }
                         }
 
                         if let Err(e) = update_wled(1.0, Color::Operational, &cfg) {
@@ -192,8 +197,13 @@ fn main() -> Result<()> {
                     Ok(false) | Err(_) => {
                         println!("✗ No connection");
                         if let Some(wled_state) = saved_wled_state.clone() {
-                            restore_wled_state(&cfg, wled_state).ok();
-                            saved_wled_state = None;
+                            match restore_wled_state(&cfg, wled_state) {
+                                Ok(_) => {
+                                    saved_wled_state = None;
+                                    println!("WLED State restored")
+                                }
+                                Err(e) => eprintln!("Failed to restore WLED state: {:#}", e),
+                            }
                         }
                     }
                 }
