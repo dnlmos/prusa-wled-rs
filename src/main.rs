@@ -1,5 +1,8 @@
 mod colors;
+mod logger;
 mod models;
+use log::{LevelFilter, debug, info, warn};
+use logger::init;
 
 use crate::{
     colors::Color,
@@ -21,6 +24,11 @@ struct Config {
     client: Client,
 }
 
+#[derive(Debug, Clone)]
+struct WledState {
+    raw_json: String,
+}
+
 #[derive(Debug, PartialEq)]
 enum State {
     NoConnection,
@@ -32,14 +40,15 @@ enum State {
 fn update_wled(completion: f64, color: Color, cfg: &Config) -> Result<()> {
     // percentage effect intensity (200 is 0, every two down will light up next segment)
     let ix = 200.0 - (0.35 * completion * 100.0);
-    println!(
+
+    debug!(
         "Progress: {:.1}, setting WLED intensity to {:.0} | Code {:?}",
         completion, ix, color
     );
 
     let ix = ix.round().clamp(0.0, 255.0) as u8;
 
-    // percentage effect, pursa orange color
+    // percentage effect (96), color assigned based on the state
     let payload = format!(
         r#"{{
         "on": true,
@@ -62,11 +71,6 @@ fn update_wled(completion: f64, color: Color, cfg: &Config) -> Result<()> {
     Ok(())
 }
 
-#[derive(Debug, Clone)]
-struct WledState {
-    raw_json: String,
-}
-
 fn fetch_wled_state(cfg: &Config) -> Result<WledState> {
     let resp = cfg
         .client
@@ -78,7 +82,7 @@ fn fetch_wled_state(cfg: &Config) -> Result<WledState> {
 }
 
 fn restore_wled_state(cfg: &Config, state: WledState) -> Result<()> {
-    println!("Restoring state");
+    info!("Restoring WLED state");
     let _resp = cfg
         .client
         .post(format!("{}/json/state", cfg.wled_ip))
@@ -139,14 +143,20 @@ fn get_heating_progress(cfg: &Config) -> Result<f64> {
 }
 
 fn main() -> Result<()> {
+    if let Err(e) = init(LevelFilter::Info) {
+        eprintln!("Failed to initialize logger: {}", e);
+    }
     let pid = std::process::id();
-    println!("Process ID: {}", pid);
+    info!("Process ID: {}", pid);
 
     dotenv::dotenv().ok();
     let cfg = Config {
-        printer_ip: env::var("PRINTER_IP")?,
-        wled_ip: env::var("WLED_IP")?,
-        api_key: env::var("PRINTER_API_KEY")?,
+        printer_ip: env::var("PRINTER_IP")
+            .context("Variable 'PRINTER_IP' not found in .env file or is not unicode")?,
+        wled_ip: env::var("WLED_IP")
+            .context("Variable 'WLED_IP' not found in .env file or is not unicode")?,
+        api_key: env::var("PRINTER_API_KEY")
+            .context("Variable 'PRINTER_API_KEY' not found in .env file or is not unicode")?,
         connection_check_interval: Duration::from_secs(5),
         job_check_interval: Duration::from_secs(10),
         progress_update_interval: Duration::from_secs(10),
@@ -156,7 +166,7 @@ fn main() -> Result<()> {
             .build()?,
     };
 
-    println!("Service started. Press Ctrl+C to stop.");
+    info!("Service started. Press Ctrl+C to stop.");
 
     let mut state = State::NoConnection;
     let mut saved_wled_state: Option<WledState> = None;
@@ -174,35 +184,35 @@ fn main() -> Result<()> {
 
         match state {
             State::NoConnection => {
-                print!("Checking connection... ");
+                info!("Checking connection... ");
                 match check_connection(&cfg) {
                     Ok(true) => {
-                        println!("✓ Connected");
+                        info!("Connected");
                         state = State::Connected;
 
                         if saved_wled_state.is_none() {
                             match fetch_wled_state(&cfg) {
                                 Ok(fetched_state) => {
                                     saved_wled_state = Some(fetched_state);
-                                    println!("WLED state saved");
+                                    info!("WLED state saved");
                                 }
-                                Err(e) => eprintln!("Failed to fetch WLED state: {:#}", e),
+                                Err(e) => warn!("Failed to fetch WLED state: {:#}", e),
                             }
                         }
 
                         if let Err(e) = update_wled(1.0, Color::Operational, &cfg) {
-                            eprintln!("Failed to update WLED: {:#}", e);
+                            warn!("Failed to update WLED: {:#}", e);
                         }
                     }
                     Ok(false) | Err(_) => {
-                        println!("✗ No connection");
+                        info!("No connection");
                         if let Some(wled_state) = saved_wled_state.clone() {
                             match restore_wled_state(&cfg, wled_state) {
                                 Ok(_) => {
                                     saved_wled_state = None;
-                                    println!("WLED State restored")
+                                    info!("WLED State restored")
                                 }
-                                Err(e) => eprintln!("Failed to restore WLED state: {:#}", e),
+                                Err(e) => warn!("Failed to restore WLED state: {:#}", e),
                             }
                         }
                     }
@@ -210,21 +220,27 @@ fn main() -> Result<()> {
             }
 
             State::Connected => {
-                print!("Checking for job... ");
+                info!("Checking for job... ");
                 match get_job_progress(&cfg) {
                     Ok(Some(completion)) => {
-                        println!("✓ Job found at {:.1}%", completion * 100.0);
+                        info!("Job found at {}", completion);
                         state = match get_heating_progress(&cfg) {
                             //
-                            Ok(p) if p < 0.97 => State::Heating,
-                            _ => State::JobActive,
+                            Ok(p) if p < 0.97 => {
+                                info!("Heating mode detected");
+                                State::Heating
+                            }
+                            _ => {
+                                info!("Heating completed, print started");
+                                State::JobActive
+                            }
                         };
                     }
                     Ok(None) => {
-                        println!("✗ No active job");
+                        info!("No active job");
                     }
                     Err(e) => {
-                        eprintln!("✗ Connection lost: {:#}", e);
+                        warn!("Connection lost: {:#}", e);
                         state = State::NoConnection;
                     }
                 }
@@ -232,47 +248,44 @@ fn main() -> Result<()> {
 
             State::Heating => match get_heating_progress(&cfg) {
                 Ok(heating_progress) => {
-                    println!("Heating progress: {}", heating_progress);
+                    info!("Heating progress: {}", heating_progress);
                     if let Err(e) = update_wled(heating_progress, Color::Heating, &cfg) {
-                        eprintln!("Failed to update WLED: {:#}", e);
+                        warn!("Failed to update WLED: {:#}", e);
                     }
                     if heating_progress > 0.90 {
                         state = State::JobActive
                     }
                 }
                 Err(e) => {
-                    eprintln!("Failed to fetch heating progress: {:#}", e);
+                    warn!("Failed to fetch heating progress: {:#}", e);
                 }
             },
 
-            State::JobActive => {
-                println!("job active");
-                match get_job_progress(&cfg) {
-                    Ok(Some(completion)) => {
-                        if let Err(e) = update_wled(completion, Color::Printing, &cfg) {
-                            eprintln!("Failed to update WLED: {:#}", e);
-                        }
-                    }
-                    Ok(None) => {
-                        println!("Job completed!");
-                        if let Err(e) = update_wled(1.0, Color::Finished, &cfg) {
-                            eprintln!("Failed to update WLED: {:#}", e);
-                        }
-                        state = State::Connected;
-                    }
-                    Err(e) => {
-                        eprintln!("Connection lost: {:#}", e);
-
-                        if let Some(wled_state) = saved_wled_state.clone()
-                            && let Err(e) = restore_wled_state(&cfg, wled_state)
-                        {
-                            eprintln!("Failed to restore WLED: {:#}", e);
-                        }
-
-                        state = State::NoConnection;
+            State::JobActive => match get_job_progress(&cfg) {
+                Ok(Some(completion)) => {
+                    if let Err(e) = update_wled(completion, Color::Printing, &cfg) {
+                        warn!("Failed to update WLED: {:#}", e);
                     }
                 }
-            }
+                Ok(None) => {
+                    info!("Job completed!");
+                    if let Err(e) = update_wled(1.0, Color::Finished, &cfg) {
+                        warn!("Failed to update WLED: {:#}", e);
+                    }
+                    state = State::Connected;
+                }
+                Err(e) => {
+                    warn!("Connection lost: {:#}", e);
+
+                    if let Some(wled_state) = saved_wled_state.clone()
+                        && let Err(e) = restore_wled_state(&cfg, wled_state)
+                    {
+                        warn!("Failed to restore WLED: {:#}", e);
+                    }
+
+                    state = State::NoConnection;
+                }
+            },
         }
     }
 }
