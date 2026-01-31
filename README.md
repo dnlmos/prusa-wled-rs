@@ -16,9 +16,9 @@ cd prusa-wled-rs
 cargo build --release
 
 # Set environment (you can put these in a .env file)
-export PRINTER_IP="192.168.1.42"
+export PRINTER_IP="http://192.168.1.42"
 export PRINTER_API_KEY="your‑printer‑api‑key"
-export WLED_IP="192.168.1.77"
+export WLED_IP="http://192.168.1.77"
 
 # Run
 ./target/release/prusa-wled-rs
