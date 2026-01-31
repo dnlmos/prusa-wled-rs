@@ -1,0 +1,20 @@
+# /etc/systemd/system/prusa-wled-rs.service
+[Unit]
+Description=Prusa WLED
+After=network.target
+
+[Service]
+# create user at runtime
+DynamicUser=yes
+
+WorkingDirectory=/opt/prusa-wled-rs
+ExecStart=/opt/prusa-wled-rs/target/release/printer
+
+Restart=on-failure
+RestartSec=5
+
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
