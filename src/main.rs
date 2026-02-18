@@ -55,6 +55,7 @@ fn update_wled(completion: f64, color: Color, cfg: &Config) -> Result<()> {
         "seg": [{{
             "ix":{},
             "fx":98,
+            "pal":0,
             "col":[{}]
         }}]
     }}"#,
