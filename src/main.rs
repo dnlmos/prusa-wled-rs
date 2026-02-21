@@ -48,13 +48,14 @@ fn update_wled(completion: f64, color: Color, cfg: &Config) -> Result<()> {
 
     let ix = ix.round().clamp(0.0, 255.0) as u8;
 
-    // percentage effect (96), color assigned based on the state
+    // percentage effect (98), color assigned based on the state
     let payload = format!(
         r#"{{
         "on": true,
         "seg": [{{
             "ix":{},
             "fx":98,
+            "pal":0,
             "col":[{}]
         }}]
     }}"#,
